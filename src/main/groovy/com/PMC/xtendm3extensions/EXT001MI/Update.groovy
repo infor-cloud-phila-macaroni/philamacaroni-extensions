@@ -58,7 +58,7 @@ public class Update extends ExtendM3Transaction {
     }
   
   
-    /**
+   /**
     * Updates record in the CINACC table.
     * by updating the account number, sequence number and error type value.
     *
