@@ -3,8 +3,8 @@
  * Name: EXT003MI.Update
  * Standard Table MITTRA Update
  * Description: Update MITTRA Data
- * Date	    Changed By      	Description
- * 20230619 Hatem Abdellatif - Update MITTRA Data
+ * Date  20230829  Changed By   Hatem Abdellatif   	Description
+ * 20230829 Hatem Abdellatif - Update MITTRA Data
  */
  
 import java.time.LocalDate;
