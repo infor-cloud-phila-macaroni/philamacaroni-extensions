@@ -1,19 +1,11 @@
 /**
-*  EXT-005MI - Update records in OOHEAD table
-*/
-/****************************************************************************************
-Extension Name: Update
-Type : ExtendM3Transaction
-Script Authors: Mohamed Adel - Hatem Abdellatif
-Date: 2023-08-28
- 
-Description:
-      Update records in OOHEAD table in OIS300
-         
-Revision History:
-Name                               Date                    Version         Description of Changes
-Hatem Abdellatif - Mohamed Adel    2023-09-02              1.0             Initial Version
-******************************************************************************************/
+ * README
+ * Name: EXT005MI.Update
+ * Standard Table OOHEAD Update
+ * Description: Update OOHEAD Data
+ * Date	    Changed By      	               Description
+ * 20230828 Hatem Abdellatif - Mohamed Adel  Update OOHEAD Data
+ */
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
@@ -22,6 +14,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.text.ParseException;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+
 
 public class Update extends ExtendM3Transaction {
   private final MIAPI mi;
@@ -85,10 +79,13 @@ public class Update extends ExtendM3Transaction {
   private String iUID2;
   private String iUID3;
   private String iUCT1;
+  private String facility;
 	int currentCompany = (Integer)program.getLDAZD().CONO;
 	String currentFacility = program.LDAZD.FACI.toString();
 	int changeNumber = 0;
 	int sequence = 0;
+	String highStatus;
+	String lowStatus;
 	
 	
 	/**
@@ -115,9 +112,6 @@ public class Update extends ExtendM3Transaction {
     iWHLO = mi.inData.get("WHLO") == null ? "" : mi.inData.get("WHLO").trim();
     iORDT = mi.inData.get("ORDT") == null ? "" : mi.inData.get("ORDT").trim();
     iRLDT = mi.inData.get("RLDT") == null ? "" : mi.inData.get("RLDT").trim();
-    iRLHM = mi.inData.get("RLHM") == null ? "" : mi.inData.get("RLHM").trim();
-    iRLDZ = mi.inData.get("RLDZ") == null ? "" : mi.inData.get("RLDZ").trim();
-    iRLHZ = mi.inData.get("RLHZ") == null ? "" : mi.inData.get("RLHZ").trim();
     iFDDT = mi.inData.get("FDDT") == null ? "" : mi.inData.get("FDDT").trim();
     iOPRI = mi.inData.get("OPRI") == null ? "" : mi.inData.get("OPRI").trim();
     iOBLC = mi.inData.get("OBLC") == null ? "" : mi.inData.get("OBLC").trim();
@@ -165,19 +159,49 @@ public class Update extends ExtendM3Transaction {
 		}
 		
     // If no errors then update the record
-    changeRecord();
+    if (!validateUpdate()) {
+      mi.error("The record you are seeking is currently locked.");
+      return;
+    } else {
+      readStatus();
+      if (lowStatus >= "22" && lowStatus <= "44") {
+        lockUnlockRecord(1);
+        updateRecord();
+        lockUnlockRecord(0);
+      } else {
+        mi.error("Not allowed to update as this order low status not between 22 and 44");
+        return;
+      }
+    }
+  }
+  
+  private boolean readStatus() {
+    DBAction query = database.table("OOHEAD").index("00").selection("OACONO", "OAORNO", "OAORST", "OAORSL").build();
+    DBContainer container = query.getContainer();
+    container.setInt("OACONO", currentCompany);
+    container.set("OAORNO", iORNO);
+    if (query.read(container)) {
+      highStatus = container.get("OAORST");
+      lowStatus = container.get("OAORSL");
+    }
   }
   
   /**
    * updates record in the OOHEAD table
    *
    */
-  private void changeRecord() {
+  private void updateRecord() {
+    logger.debug("Start database update");
     DBAction query = database.table("OOHEAD").index("00").build();
     DBContainer container = query.getContainer();
 
     container.setInt("OACONO", currentCompany);
     container.set("OAORNO", iORNO);
+    
+    if (query.read(container)) {
+      highStatus = container.get("OAORST");
+      lowStatus = container.get("OAORSL");
+    }
     
     // Update changed information
     if(!query.readLock(container, updateCallBack)){
@@ -189,197 +213,187 @@ public class Update extends ExtendM3Transaction {
   
   Closure<?> updateCallBack = { LockedResult lockedResult ->
   
-    if (!(iFACI == null || iFACI == "")){
+    if(iFACI != "" && iFACI != "?"){
       lockedResult.set("OAFACI", iFACI);
     } else {
       lockedResult.set("OAFACI", currentFacility);
     }
   
-    if(!(iWHLO == null || iWHLO == "")){
+    if(iWHLO != "" && iWHLO != "?"){
       lockedResult.set("OAWHLO", iWHLO);
     }
     
-    if(!(iORDT == null || iORDT == "")){
+    if(iORDT != "" && iORDT != "?"){
       lockedResult.setInt("OAORDT", iORDT.toInteger());
     }
     
-    if(!(iRLDT == null || iRLDT == "")){
+    if(iRLDT != "" && iRLDT != "?"){
       lockedResult.setInt("OARLDT", iRLDT.toInteger());
     }
     
-    if(!(iRLHM == null || iRLHM == "")){
-      lockedResult.setInt("OARLHM", iRLHM.toInteger());
-    }
-    
-    if(!(iRLDZ == null || iRLDZ == "")){
-      lockedResult.setInt("OARLDZ", iRLDZ.toInteger());
-    }
-    
-    if(!(iRLHZ == null || iRLHZ == "")){
-      lockedResult.setInt("OARLHZ", iRLHZ.toInteger());
-    }
-    
-    if(!(iFDDT == null || iFDDT == "")){
+    if(iFDDT != "" && iFDDT != "?"){
       lockedResult.setInt("OAFDDT", iFDDT.toInteger());
     }
     
-    if(!(iOPRI == null || iOPRI == "")){
+    if(iOPRI != "" && iOPRI != "?"){
       lockedResult.setInt("OAOPRI", iOPRI.toInteger());
     }
     
-    if(!(iOBLC == null || iOBLC == "")){
+    if(iOBLC != "" && iOBLC != "?"){
       lockedResult.setInt("OAOBLC", iOBLC.toInteger());
     }
     
-    if(!(iTEPY == null || iTEPY == "")){
+    if(iTEPY != "" && iTEPY != "?"){
       lockedResult.set("OATEPY", iTEPY);
     }
     
-    if(!(iPYCD == null || iPYCD == "")){
+    if(iPYCD != "" && iPYCD != "?"){
       lockedResult.set("OAPYCD", iPYCD);
     }
     
-    if(!(iTECD == null || iTECD == "")){
+    if(iTECD != "" && iTECD != "?"){
       lockedResult.set("OATECD", iTECD);
     }
     
-    if(!(iMODL == null || iMODL == "")){
+    if(iMODL != "" && iMODL != "?"){
       lockedResult.set("OAMODL", iMODL);
     }
     
-    if(!(iTEDL == null || iTEDL == "")){
+    if(iTEDL != "" && iTEDL != "?"){
       lockedResult.set("OATEDL", iTEDL);
     }
     
-    if(!(iTEL2 == null || iTEL2 == "")){
+    if(iTEL2 != "" && iTEL2 != "?"){
       lockedResult.set("OATEL2", iTEL2);
     }
     
-    if(!(iTEPA == null || iTEPA == "")){
+    if(iTEPA != "" && iTEPA != "?"){
       lockedResult.set("OATEPA", iTEPA);
     }
     
-    if(!(iADID == null || iADID == "")){
+    if(iADID != "" && iADID != "?"){
       lockedResult.set("OAADID", iADID);
     }
     
-    if(!(iSMCD == null || iSMCD == "")){
+    if(iSMCD != "" && iSMCD != "?"){
       lockedResult.set("OASMCD", iSMCD);
     }
     
-    if(!(iOFNO == null || iOFNO == "")){
+    if(iOFNO != "" && iOFNO != "?"){
       lockedResult.set("OAOFNO", iOFNO);
     }
     
-    if(!(iOREF == null || iOREF == "")){
+    if(iOREF != "" && iOREF != "?"){
       lockedResult.set("OAOREF", iOREF);
     }
     
-    if(!(iYREF == null || iYREF == "")){
+    if(iYREF != "" && iYREF != "?"){
       lockedResult.set("OAYREF", iYREF);
     }
     
-    if(!(iCUOR == null || iCUOR == "")){
+    if(iCUOR != "" && iCUOR != "?"){
       lockedResult.set("OACUOR", iCUOR);
     }
     
-    if(!(iEXCD == null || iEXCD == "")){
+    if(iEXCD != "" && iEXCD != "?"){
       lockedResult.set("OAEXCD", iEXCD);
     }
     
-    if(!(iHAFE == null || iHAFE == "")){
+    if(iHAFE != "" && iHAFE != "?"){
       lockedResult.set("OAHAFE", iHAFE);
     }
     
-    if(!(iROUT == null || iROUT == "")){
+    if(iROUT != "" && iROUT != "?"){
       lockedResult.set("OAROUT", iROUT);
     }
     
-    if(!(iRODN == null || iRODN == "")){
+    if(iRODN != "" && iRODN != "?"){
       lockedResult.setInt("OARODN", iRODN.toInteger());
+    } else {
+      lockedResult.setInt("OARODN", 0);
     }
     
-    if(!(iRASN == null || iRASN == "")){
+    if(iRASN != "" && iRASN != "?"){
       lockedResult.set("OARASN", iRASN);
     }
     
-    if(!(iUCA1 == null || iUCA1 == "")){
+    if(iUCA1 != "" && iUCA1 != "?"){
       lockedResult.set("OAUCA1", iUCA1);
     }
     
-    if(!(iUCA2 == null || iUCA2 == "")){
+    if(iUCA2 != "" && iUCA2 != "?"){
       lockedResult.set("OAUCA2", iUCA2);
     }
     
-    if(!(iUCA3 == null || iUCA3 == "")){
+    if(iUCA3 != "" && iUCA3 != "?"){
       lockedResult.set("OAUCA3", iUCA3);
     }
     
-    if(!(iUCA4 == null || iUCA4 == "")){
+    if(iUCA4 != "" && iUCA4 != "?"){
       lockedResult.set("OAUCA4", iUCA4);
     }
     
-    if(!(iUCA5 == null || iUCA5 == "")){
+    if(iUCA5 != "" && iUCA5 != "?"){
       lockedResult.set("OAUCA5", iUCA5);
     }
     
-    if(!(iUCA6 == null || iUCA6 == "")){
+    if(iUCA6 != "" && iUCA6 != "?"){
       lockedResult.set("OAUCA6", iUCA6);
     }
     
-    if(!(iUCA7 == null || iUCA7 == "")){
+    if(iUCA7 != "" && iUCA7 != "?"){
       lockedResult.set("OAUCA7", iUCA7);
     }
     
-    if(!(iUCA8 == null || iUCA8 == "")){
+    if(iUCA8 != "" && iUCA8 != "?"){
       lockedResult.set("OAUCA8", iUCA8);
     }
     
-    if(!(iUCA9 == null || iUCA9 == "")){
+    if(iUCA9 != "" && iUCA9 != "?"){
       lockedResult.set("OAUCA9", iUCA9);
     }
     
-    if(!(iUCA0 == null || iUCA0 == "")){
+    if(iUCA0 != "" && iUCA0 != "?"){
       lockedResult.set("OAUCA0", iUCA0);
     }
     
-    if(!(iUDN1 == null || iUDN1 == "")){
+    if(iUDN1 != "" && iUDN1 != "?"){
       lockedResult.setDouble("OAUDN1", iUDN1.toDouble());
     }
     
-    if(!(iUDN2 == null || iUDN2 == "")){
+    if(iUDN2 != "" && iUDN2 != "?"){
       lockedResult.setDouble("OAUDN2", iUDN2.toDouble());
     }
     
-    if(!(iUDN3 == null || iUDN3 == "")){
+    if(iUDN3 != "" && iUDN3 != "?"){
       lockedResult.setDouble("OAUDN3", iUDN3.toDouble());
     }
     
-    if(!(iUDN4 == null || iUDN4 == "")){
+    if(iUDN4 != "" && iUDN4 != "?"){
       lockedResult.setDouble("OAUDN4", iUDN4.toDouble());
     }
     
-    if(!(iUDN5 == null || iUDN5 == "")){
+    if(iUDN5 != "" && iUDN5 != "?"){
       lockedResult.setDouble("OAUDN5", iUDN5.toDouble());
     }
     
-    if(!(iUDN6 == null || iUDN6 == "")){
+    if(iUDN6 != "" && iUDN6 != "?"){
       lockedResult.setDouble("OAUDN6", iUDN6.toDouble());
     }
     
-    if(!(iUID1 == null || iUID1 == "")){
+    if(iUID1 != "" && iUID1 != "?"){
       lockedResult.setInt("OAUID1", iUID1.toInteger());
     }
     
-    if(!(iUID2 == null || iUID2 == "")){
+    if(iUID2 != "" && iUID2 != "?"){
       lockedResult.setInt("OAUID2", iUID2.toInteger());
     }
     
-    if(!(iUID3 == null || iUID3 == "")){
+    if(iUID3 != "" && iUID3 != "?"){
       lockedResult.setInt("OAUID3", iUID3.toInteger());
     }
     
-    if(!(iUCT1 == null || iUCT1 == "")){
+    if(iUCT1 != "" && iUCT1 != "?"){
       lockedResult.set("OAUCT1", iUCT1);
     }
   
@@ -400,6 +414,27 @@ public class Update extends ExtendM3Transaction {
         
      if(strDate.matches(strDateRegEx)){
        SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMdd");
+       try{
+          sdf.parse(strDate);
+          return true;
+       }catch(ParseException e){
+        return false;
+       }
+        
+     }
+   }
+   
+   /**
+	  * validateTime - Validate input
+	  *
+	  * @param  String - strDate
+	  * @return boolean
+	  */
+   private boolean validateTime(String strDate){
+     String strDateRegEx =  "(([0-1]?[0-9])|(2[0-3]))[0-5][0-9][0-5][0-9]";
+        
+     if(strDate.matches(strDateRegEx)){
+       SimpleDateFormat sdf = new SimpleDateFormat("HHmmss");
        try{
           sdf.parse(strDate);
           return true;
@@ -451,6 +486,190 @@ public class Update extends ExtendM3Transaction {
   }
   
   /**
+  	* validWarehouse - Validate transaction warehouse
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validOrder(){
+    boolean validRecord = false;
+    def parameters = ["ORNO" : iORNO];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    miCaller.call("OIS100MI", "GetHead", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validWarehouse - Validate transaction warehouse
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validWarehouse(){
+    boolean validRecord = false;
+    def parameters = ["WHLO" : iWHLO];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    miCaller.call("MMS005MI", "GetWarehouse", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validFacility - Validate transaction facility
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validFacility(){
+    boolean validRecord = false;
+    def parameters = ["FACI" : iFACI];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    miCaller.call("CRS008MI", "Get", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validPaymentTerm - Validate transaction payment term
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validPaymentTerm(){
+    boolean validRecord = false;
+    def parameters = ["TEPY" : iTEPY, "LNCD" : "GB"];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    miCaller.call("CRS075MI", "Get", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validPaymentMethod - Validate transaction payment method
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validPaymentMethod(){
+    boolean validRecord = false;
+    
+    DBAction query = database.table("CSYTAB").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("CTCONO", currentCompany);
+    container.set("CTDIVI", "");
+    container.set("CTSTCO", "PYCD");
+    container.set("CTSTKY", iPYCD);
+    container.set("CTLNCD", "");
+    
+    // Read information
+    if(!query.read(container)){
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
+  /**
+  	* validCashDiscountTerm - Validate transaction cash discount term
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validCashDiscountTerm(){
+    boolean validRecord = false;
+    
+    DBAction query = database.table("CSYTAB").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("CTCONO", currentCompany);
+    container.set("CTDIVI", "");
+    container.set("CTSTCO", "TECD");
+    container.set("CTSTKY", iTECD);
+    container.set("CTLNCD", "GB");
+    
+    // Read information
+    if(!query.read(container)){
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
+  /**
+  	* validPackageTerms - Validate package terms
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validPackageTerms(){
+    boolean validRecord = false;
+    
+    DBAction query = database.table("CSYTAB").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("CTCONO", currentCompany);
+    container.set("CTDIVI", "");
+    container.set("CTSTCO", "TEPA");
+    container.set("CTSTKY", iTEPA);
+    container.set("CTLNCD", "GB");
+    
+    // Read information
+    if(!query.read(container)){
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
+  /**
+  	* validSalesPerson - Validate sales person
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validSalesPerson(){
+    boolean validRecord = false;
+    
+    DBAction query = database.table("CSYTAB").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("CTCONO", currentCompany);
+    container.set("CTDIVI", "");
+    container.set("CTSTCO", "SMCD");
+    container.set("CTSTKY", iSMCD);
+    container.set("CTLNCD", "");
+    
+    // Read information
+    if(!query.read(container)){
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
+  /**
 	 * validate - Validate input
 	 *
 	 * @param  null
@@ -482,13 +701,6 @@ public class Update extends ExtendM3Transaction {
     if(!(iFDDT == null || iFDDT == "")){
       if (!validateDate(iFDDT)) {
         mi.error("Invalid earliest delivery date.");
-        return false;
-      }
-    }
-    
-    if(!(iRLDZ == null || iRLDZ == "")){
-      if (!validateDate(iRLDZ)) {
-        mi.error("Invalid requested delivery date.");
         return false;
       }
     }
@@ -535,8 +747,132 @@ public class Update extends ExtendM3Transaction {
   		  return false;
       }
     }
+    
+    /**
+     * Calling method validWarehouse to validate the warehouse input data
+     */
+   
+    if (!validOrder()) {
+      mi.error("Order data " + iORNO + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validWarehouse to validate the warehouse input data
+     */
+   
+    if (!validWarehouse()) {
+      mi.error("Warehouse data " + iWHLO + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validFacility to validate the facility input data
+     */
+   
+    if (!validFacility()) {
+      mi.error("Facility data " + iFACI + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validFacility to validate the facility input data
+     */
+   
+    if (!validPaymentTerm()) {
+      mi.error("Payment term data " + iTEPY + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validFacility to validate the facility input data
+     */
+   
+    if (!validPaymentMethod()) {
+      mi.error("Payment method data " + iPYCD + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validFacility to validate the facility input data
+     */
+   
+    if (!validCashDiscountTerm()) {
+      mi.error("Cash discount term data " + iTECD + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validFacility to validate the facility input data
+     */
+   
+    if (!validPackageTerms()) {
+      mi.error("Package terms data " + iTEPA + " is invalid");
+		  return false;
+    }
+    
+    /**
+     * Calling method validFacility to validate the facility input data
+     */
+   
+    if (!validSalesPerson()) {
+      mi.error("Sales person data " + iSMCD + " is invalid");
+		  return false;
+    }
 
 		return true;
+	}
+	
+	/**
+	 * validateUpdate - validateUpdate input
+	 *
+	 * @param  null
+	 * @return boolean
+	 */
+	boolean validateUpdate() {
+	  DBAction query = database.table("OOHEAD").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("OACONO", currentCompany);
+    container.set("OAORNO", iORNO);
+    
+    if (query.read(container)) {
+      int orderEntryProgress = container.get("OAHOCD");
+      
+      if (orderEntryProgress == 1) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+	}
+	
+	/**
+	 * lockUnlockRecord - lockUnlockRecord input
+	 *
+	 * @param  int orderEntry
+	 * @return null
+	 */
+	void lockUnlockRecord(int orderEntry) {
+	  logger.debug("Start database lock/unlock");
+	  DBAction query = database.table("OOHEAD").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("OACONO", currentCompany);
+    container.set("OAORNO", iORNO);
+    
+    // Update changed information
+    if(!query.readLock(container, updateCallBack)){
+      mi.error("Record does not exist");
+      return;
+    }
+    
+    Closure<?> updateCallBack = { LockedResult lockedResult ->
+    
+      lockedResult.setInt("OAHOCD", orderEntry);
+      
+      lockedResult.update();
+    }
 	}
   
 }
