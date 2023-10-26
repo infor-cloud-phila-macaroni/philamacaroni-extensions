@@ -127,7 +127,7 @@ public class Get extends ExtendM3Transaction {
       return;
     }
       
-    if (!query.readAll(container, 4, 200, readData)) {
+    if (!query.read(container)) {
       mi.error("Record does not exist in EXTD89 database table!");
     }
   }

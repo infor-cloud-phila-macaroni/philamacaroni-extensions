@@ -11,7 +11,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.text.ParseException;
 import java.time.format.DateTimeParseException;
@@ -67,8 +66,6 @@ public class Update extends ExtendM3Transaction {
   /**
 	 * Global variables
 	 */
-  int currentCompany = (Integer)program.getLDAZD().CONO;
-  String currentDivision = program.LDAZD.DIVI.toString();
   String currentFacility = program.LDAZD.FACI.toString();
   int changeNumber = 0;
 	int sequence = 0;
@@ -156,11 +153,11 @@ public class Update extends ExtendM3Transaction {
                              .build();
       
     DBContainer container = query.getContainer();
-    container.setInt("EXCONO", currentCompany);
+    container.setInt("EXCONO", iCONO.toInteger());
   	container.set("EXTRNR", iTRNR);
   	container.set("EXTYPE", iTYPE);
   	container.setInt("EXDOLN", iDOLN.toInteger());
-  	container.set("EXDIVI", currentDivision);
+  	container.set("EXDIVI", iDIVI);
   	
   	// Update changed information
     if(!query.readLock(container, updateCallBack)){
@@ -390,13 +387,9 @@ public class Update extends ExtendM3Transaction {
     String strDateRegEx =  "\\d{4}(0[1-9]|1[012])(0[1-9]|[12][0-9]|[3][01])";
       
     if(strDate.matches(strDateRegEx)){
-      SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMdd");
-      try{
-        sdf.parse(strDate);
-        return true;
-      }catch(ParseException e){
-        return false;
-      }
+      return true;
+    } else {
+      return false;
     }
   }
    
@@ -410,13 +403,9 @@ public class Update extends ExtendM3Transaction {
     String strDateRegEx =  "(([0-1]?[0-9])|(2[0-3]))[0-5][0-9][0-5][0-9]";
       
     if(strDate.matches(strDateRegEx)){
-      SimpleDateFormat sdf = new SimpleDateFormat("HHmmss");
-      try{
-        sdf.parse(strDate);
-        return true;
-      }catch(ParseException e){
-        return false;
-      }
+      return true;
+    } else {
+      return false;
     }
   }
   
@@ -433,6 +422,10 @@ public class Update extends ExtendM3Transaction {
 		} else if (!iCONO.isInteger()) {
 			mi.error("Company number " + iCONO + " is invalid");
 			return false;
+		}
+		
+		if (iDIVI == "") {
+			iDIVI = program.LDAZD.DIVI.toString();
 		}
     
     if (!validWarehouse()) {
