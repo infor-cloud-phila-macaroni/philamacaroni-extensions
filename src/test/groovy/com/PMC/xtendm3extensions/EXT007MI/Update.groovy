@@ -54,9 +54,7 @@ public class Update extends ExtendM3Transaction {
   private String iD230;
   private String iD330;
   private String iD430;
-  private String iCONO;
   private String iDOLN;
-  private String iDIVI;
   private String iWHLO;
   private	String iTWLO;
   private String iFACI;
@@ -66,7 +64,9 @@ public class Update extends ExtendM3Transaction {
   /**
 	 * Global variables
 	 */
-  String currentFacility = program.LDAZD.FACI.toString();
+  int currentCompany = (Integer)program.getLDAZD().CONO;
+	String currentDivision = program.LDAZD.DIVI.toString();
+	String currentFacility = program.LDAZD.FACI.toString();
   int changeNumber = 0;
 	int sequence = 0;
 	private String currentFormattedDate;
@@ -113,8 +113,6 @@ public class Update extends ExtendM3Transaction {
     iD230 = mi.inData.get("D230") == null ? "" : mi.inData.get("D230").trim();
     iD330 = mi.inData.get("D330") == null ? "" : mi.inData.get("D330").trim();
     iD430 = mi.inData.get("D430") == null ? "" : mi.inData.get("D430").trim();
-    iCONO = mi.inData.get("CONO") == null ? "" : mi.inData.get("CONO").trim();
-    iDIVI = mi.inData.get("DIVI") == null ? "" : mi.inData.get("DIVI").trim();
     iWHLO = mi.inData.get("WHLO") == null ? "" : mi.inData.get("WHLO").trim();
     iTWLO = mi.inData.get("TWLO") == null ? "" : mi.inData.get("TWLO").trim();
     iFACI = mi.inData.get("FACI") == null ? "" : mi.inData.get("FACI").trim();
@@ -153,11 +151,11 @@ public class Update extends ExtendM3Transaction {
                              .build();
       
     DBContainer container = query.getContainer();
-    container.setInt("EXCONO", iCONO.toInteger());
+    container.setInt("EXCONO", currentCompany);
   	container.set("EXTRNR", iTRNR);
   	container.set("EXTYPE", iTYPE);
   	container.setInt("EXDOLN", iDOLN.toInteger());
-  	container.set("EXDIVI", iDIVI);
+  	container.set("EXDIVI", currentDivision);
   	
   	// Update changed information
     if(!query.readLock(container, updateCallBack)){
@@ -290,8 +288,7 @@ public class Update extends ExtendM3Transaction {
       lockedResult.set("EXWHLO", iWHLO);
     }
 
-    lockedResult.set("EXRGDT", currentDate);
-    lockedResult.set("EXRGTM", currentTime);
+    lockedResult.set("EXLMDT", currentDate);
 		lockedResult.set("EXCHNO", lockedResult.getInt("EXCHNO")+1);
 		lockedResult.set("EXCHID", program.getUser());
     lockedResult.update();
@@ -380,33 +377,19 @@ public class Update extends ExtendM3Transaction {
   /**
    * validateDate - Validate input
    *
-   * @param  String - strDate
+   * @param  String - formatStr
+   * @param  String - dateStr
    * @return boolean
    */
-  private boolean validateDate(String strDate){
-    String strDateRegEx =  "\\d{4}(0[1-9]|1[012])(0[1-9]|[12][0-9]|[3][01])";
-      
-    if(strDate.matches(strDateRegEx)){
-      return true;
-    } else {
+  def boolean validateDate(String formatStr, String dateStr){
+    try {
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr).BASIC_ISO_DATE;
+      LocalDate.parse(dateStr, formatter);
+    } catch (DateTimeParseException e) {
+      logger.debug("Exception: " + e.toString());
       return false;
     }
-  }
-   
-  /**
-   * validateTime - Validate input
-   *
-   * @param  String - strDate
-   * @return boolean
-   */
-  private boolean validateTime(String strDate){
-    String strDateRegEx =  "(([0-1]?[0-9])|(2[0-3]))[0-5][0-9][0-5][0-9]";
-      
-    if(strDate.matches(strDateRegEx)){
-      return true;
-    } else {
-      return false;
-    }
+    return true;
   }
   
   /**
@@ -416,17 +399,6 @@ public class Update extends ExtendM3Transaction {
 	 * @return boolean
 	 */
 	boolean validate() {
-
-		if (iCONO == "") {
-			iCONO = (Integer)program.getLDAZD().CONO;
-		} else if (!iCONO.isInteger()) {
-			mi.error("Company number " + iCONO + " is invalid");
-			return false;
-		}
-		
-		if (iDIVI == "") {
-			iDIVI = program.LDAZD.DIVI.toString();
-		}
     
     if (!validWarehouse()) {
       mi.error("Warehouse data " + iWHLO + " is invalid");
@@ -444,35 +416,35 @@ public class Update extends ExtendM3Transaction {
     }
     
     if(!(iD030 == null || iD030 == "")){
-      if (!validateDate(iD030)) {
+      if (!validateDate("YYYYMMdd", iD030)) {
         mi.error("Invalid date: " + iD030);
         return false;
       }
     }
     
     if(!(iD130 == null || iD130 == "")){
-      if (!validateDate(iD130)) {
+      if (!validateDate("YYYYMMdd", iD130)) {
         mi.error("Invalid date: " + iD130);
         return false;
       }
     }
     
     if(!(iD230 == null || iD230 == "")){
-      if (!validateDate(iD230)) {
+      if (!validateDate("YYYYMMdd", iD230)) {
         mi.error("Invalid date: " + iD230);
         return false;
       }
     }
     
     if(!(iD330 == null || iD330 == "")){
-      if (!validateDate(iD330)) {
+      if (!validateDate("YYYYMMdd", iD330)) {
         mi.error("Invalid date: " + iD330);
         return false;
       }
     }
     
     if(!(iD430 == null || iD430 == "")){
-      if (!validateDate(iD430)) {
+      if (!validateDate("YYYYMMdd", iD430)) {
         mi.error("Invalid date: " + iD430);
         return false;
       }
