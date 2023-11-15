@@ -54,6 +54,8 @@ public class Update extends ExtendM3Transaction {
   private String iD230;
   private String iD330;
   private String iD430;
+  private String iCONO;
+  private String iDIVI;
   private String iDOLN;
   private String iWHLO;
   private	String iTWLO;
@@ -64,9 +66,6 @@ public class Update extends ExtendM3Transaction {
   /**
 	 * Global variables
 	 */
-  int currentCompany = (Integer)program.getLDAZD().CONO;
-	String currentDivision = program.LDAZD.DIVI.toString();
-	String currentFacility = program.LDAZD.FACI.toString();
   int changeNumber = 0;
 	int sequence = 0;
 	private String currentFormattedDate;
@@ -113,6 +112,8 @@ public class Update extends ExtendM3Transaction {
     iD230 = mi.inData.get("D230") == null ? "" : mi.inData.get("D230").trim();
     iD330 = mi.inData.get("D330") == null ? "" : mi.inData.get("D330").trim();
     iD430 = mi.inData.get("D430") == null ? "" : mi.inData.get("D430").trim();
+    iCONO = mi.inData.get("CONO") == null ? "" : mi.inData.get("CONO").trim();
+    iDIVI = mi.inData.get("DIVI") == null ? "" : mi.inData.get("DIVI").trim();
     iWHLO = mi.inData.get("WHLO") == null ? "" : mi.inData.get("WHLO").trim();
     iTWLO = mi.inData.get("TWLO") == null ? "" : mi.inData.get("TWLO").trim();
     iFACI = mi.inData.get("FACI") == null ? "" : mi.inData.get("FACI").trim();
@@ -139,10 +140,10 @@ public class Update extends ExtendM3Transaction {
   }
   
   /**
-	 * addRecord - To add a new record in Table EXTD89
+	 * updateRecord - To update an existing record in Table EXTD89
 	 *
 	 * @param  null
-	 * @return boolean
+	 * @return void
 	 */
   private void updateRecord() {
     
@@ -151,11 +152,10 @@ public class Update extends ExtendM3Transaction {
                              .build();
       
     DBContainer container = query.getContainer();
-    container.setInt("EXCONO", currentCompany);
+    container.setInt("EXCONO", iCONO.toInteger());
   	container.set("EXTRNR", iTRNR);
   	container.set("EXTYPE", iTYPE);
   	container.setInt("EXDOLN", iDOLN.toInteger());
-  	container.set("EXDIVI", currentDivision);
   	
   	// Update changed information
     if(!query.readLock(container, updateCallBack)){
@@ -168,8 +168,10 @@ public class Update extends ExtendM3Transaction {
   
     if(iFACI != "" && iFACI != "?"){
       lockedResult.set("EXFACI", iFACI);
-    } else {
-      lockedResult.set("EXFACI", currentFacility);
+    }
+    
+    if(iDIVI != "" && iDIVI != "?"){
+      lockedResult.set("EXDIVI", iDIVI);
     }
 
     if(iD030 != "" && iD030 != "?"){
@@ -295,6 +297,48 @@ public class Update extends ExtendM3Transaction {
   }
   
   /**
+	  * validateCompany - Validate comapny
+	  *
+	  * @param  null
+	  * @return boolean
+	  */
+  def boolean validateCompany(){
+    boolean validRecord = false;
+    def parameters = ["CONO" : iCONO];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("MNS095MI", "Get", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+	  * validateDivision - Validate division
+	  *
+	  * @param  null
+	  * @return boolean
+	  */
+  def boolean validateDivision(){
+    boolean validRecord = false;
+    def parameters = ["CONO" : iCONO, "DIVI" : iDIVI];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("MNS100MI", "GetBasicData", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
   	* validWarehouse - Validate transaction warehouse
   	*
   	* @param  null
@@ -353,26 +397,7 @@ public class Update extends ExtendM3Transaction {
     miCaller.call("CRS008MI", "Get", parameters, handler);
     return validRecord;
   }
-  
-  /**
-  	* validOrderNumber - Validate order number
-  	*
-  	* @param  null
-  	* @return boolean
-  	*/
-  def boolean validOrderNumber(){
-    boolean validRecord = false;
-    def parameters = ["TRNR" : iTRNR];
-    Closure<?> handler = { Map<String, String> response ->
-      if (response.containsKey('errorMsid')){
-        validRecord = false;
-      } else {
-        validRecord = true;
-      }
-    };
-    miCaller.call("MMS100MI", "GetHead", parameters, handler);
-    return validRecord;
-  }
+
   
   /**
    * validateDate - Validate input
@@ -399,6 +424,27 @@ public class Update extends ExtendM3Transaction {
 	 * @return boolean
 	 */
 	boolean validate() {
+	  
+	  if (iCONO == "") {
+			iCONO = (Integer)program.getLDAZD().CONO;
+		} else if (!validateCompany()) {
+			mi.error("Company number " + iCONO + " is invalid");
+			return false;
+		}
+		
+		if (iDIVI == "") {
+			iDIVI = program.LDAZD.DIVI.toString();
+		} else if (!validateDivision()) {
+			mi.error("Division " + iDIVI + " is invalid");
+			return false;
+		}
+		
+		if (iFACI == "") {
+			iFACI = program.LDAZD.FACI.toString();
+		} else if (!validFacility()) {
+			mi.error("Facility " + iFACI + " is invalid");
+			return false;
+		}
     
     if (!validWarehouse()) {
       mi.error("Warehouse data " + iWHLO + " is invalid");
