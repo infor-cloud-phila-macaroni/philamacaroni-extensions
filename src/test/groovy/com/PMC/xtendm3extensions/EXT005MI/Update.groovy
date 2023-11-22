@@ -79,8 +79,6 @@ public class Update extends ExtendM3Transaction {
   private String iUID2;
   private String iUID3;
   private String iUCT1;
-  private String facility;
-	int currentCompany = (Integer)program.getLDAZD().CONO;
 	String currentFacility = program.LDAZD.FACI.toString();
 	int changeNumber = 0;
 	int sequence = 0;
@@ -164,21 +162,27 @@ public class Update extends ExtendM3Transaction {
       return;
     } else {
       readStatus();
-      if (lowStatus >= "22" && lowStatus <= "44") {
+      if (lowStatus >= "22" && lowStatus <= "33") {
         lockUnlockRecord(1);
         updateRecord();
         lockUnlockRecord(0);
       } else {
-        mi.error("Not allowed to update as this order low status not between 22 and 44");
+        mi.error("Not allowed to update as this order low status not between 22 and 33");
         return;
       }
     }
   }
   
+  /**
+	 * readStatus - Read of the current record status
+	 *
+	 * @param  null
+	 * @return boolean
+	 */
   private boolean readStatus() {
     DBAction query = database.table("OOHEAD").index("00").selection("OACONO", "OAORNO", "OAORST", "OAORSL").build();
     DBContainer container = query.getContainer();
-    container.setInt("OACONO", currentCompany);
+    container.setInt("OACONO", iCONO.toInteger());
     container.set("OAORNO", iORNO);
     if (query.read(container)) {
       highStatus = container.get("OAORST");
@@ -195,7 +199,7 @@ public class Update extends ExtendM3Transaction {
     DBAction query = database.table("OOHEAD").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("OACONO", currentCompany);
+    container.setInt("OACONO", iCONO.toInteger());
     container.set("OAORNO", iORNO);
     
     if (query.read(container)) {
@@ -404,66 +408,63 @@ public class Update extends ExtendM3Transaction {
   }
   
   /**
+	  * validateCompany - Validate comapny
+	  *
+	  * @param  null
+	  * @return boolean
+	  */
+  def boolean validateCompany(){
+    boolean validRecord = false;
+    def parameters = ["CONO" : iCONO];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("MNS095MI", "Get", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
 	  * validateDate - Validate input
 	  *
 	  * @param  String - strDate
 	  * @return boolean
 	  */
-   private boolean validateDate(String strDate){
-     String strDateRegEx =  "\\d{4}(0[1-9]|1[012])(0[1-9]|[12][0-9]|[3][01])";
-        
-     if(strDate.matches(strDateRegEx)){
-       SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMdd");
-       try{
-          sdf.parse(strDate);
-          return true;
-       }catch(ParseException e){
-        return false;
-       }
-        
-     }
-   }
-   
-   /**
-	  * validateTime - Validate input
-	  *
-	  * @param  String - strDate
-	  * @return boolean
-	  */
-   private boolean validateTime(String strDate){
-     String strDateRegEx =  "(([0-1]?[0-9])|(2[0-3]))[0-5][0-9][0-5][0-9]";
-        
-     if(strDate.matches(strDateRegEx)){
-       SimpleDateFormat sdf = new SimpleDateFormat("HHmmss");
-       try{
-          sdf.parse(strDate);
-          return true;
-       }catch(ParseException e){
-        return false;
-       }
-        
-     }
-   }
+  def boolean validateDate(String formatStr, String dateStr){
+    try {
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr).BASIC_ISO_DATE;
+      LocalDate.parse(dateStr, formatter);
+    } catch (DateTimeParseException e) {
+      logger.debug("Exception: " + e.toString());
+      return false;
+    }
+    return true;
+  }
   
   /**
-	  * validDeliveryTerms - Validate the delivery method
+	  * validDeliveryTerms - Validate the delivery terms
 	  *
 	  * @param  null
 	  * @return boolean
 	  */
-   def boolean validDeliveryTerms(){
-      boolean validRecord = false;
-      def parameters = ["TEDL" : iTEDL, "LNCD" : "GB"];
-      Closure<?> handler = { Map<String, String> response ->
-        if (response.containsKey('errorMsid')){
-          validRecord = false;
-        } else {
-          validRecord = true;
-        }
-      };
-      miCaller.call("CRS065MI", "GetDelyTerm", parameters, handler);
-      return validRecord;
-   }
+  def boolean validDeliveryTerms(){
+    boolean validRecord = false;
+    def parameters = ["TEDL" : iTEDL, "LNCD" : "GB"];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("CRS065MI", "GetDelyTerm", parameters, handler);
+    return validRecord;
+  }
    
   /**
   	* validDeliveryMethod - Validate the delivery method
@@ -481,12 +482,13 @@ public class Update extends ExtendM3Transaction {
         validRecord = true;
       }
     };
+    
     miCaller.call("CRS070MI", "GetDelyMethod", parameters, handler);
     return validRecord;
   }
   
   /**
-  	* validWarehouse - Validate transaction warehouse
+  	* validOrder - Validate order number
   	*
   	* @param  null
   	* @return boolean
@@ -501,6 +503,7 @@ public class Update extends ExtendM3Transaction {
         validRecord = true;
       }
     };
+    
     miCaller.call("OIS100MI", "GetHead", parameters, handler);
     return validRecord;
   }
@@ -521,6 +524,7 @@ public class Update extends ExtendM3Transaction {
         validRecord = true;
       }
     };
+    
     miCaller.call("MMS005MI", "GetWarehouse", parameters, handler);
     return validRecord;
   }
@@ -541,6 +545,7 @@ public class Update extends ExtendM3Transaction {
         validRecord = true;
       }
     };
+    
     miCaller.call("CRS008MI", "Get", parameters, handler);
     return validRecord;
   }
@@ -577,7 +582,7 @@ public class Update extends ExtendM3Transaction {
     DBAction query = database.table("CSYTAB").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("CTCONO", currentCompany);
+    container.setInt("CTCONO", iCONO.toInteger());
     container.set("CTDIVI", "");
     container.set("CTSTCO", "PYCD");
     container.set("CTSTKY", iPYCD);
@@ -603,7 +608,7 @@ public class Update extends ExtendM3Transaction {
     DBAction query = database.table("CSYTAB").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("CTCONO", currentCompany);
+    container.setInt("CTCONO", iCONO.toInteger());
     container.set("CTDIVI", "");
     container.set("CTSTCO", "TECD");
     container.set("CTSTKY", iTECD);
@@ -629,7 +634,7 @@ public class Update extends ExtendM3Transaction {
     DBAction query = database.table("CSYTAB").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("CTCONO", currentCompany);
+    container.setInt("CTCONO", iCONO.toInteger());
     container.set("CTDIVI", "");
     container.set("CTSTCO", "TEPA");
     container.set("CTSTKY", iTEPA);
@@ -655,7 +660,7 @@ public class Update extends ExtendM3Transaction {
     DBAction query = database.table("CSYTAB").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("CTCONO", currentCompany);
+    container.setInt("CTCONO", iCONO.toInteger());
     container.set("CTDIVI", "");
     container.set("CTSTCO", "SMCD");
     container.set("CTSTKY", iSMCD);
@@ -679,48 +684,48 @@ public class Update extends ExtendM3Transaction {
 
 		if (iCONO == "") {
 			iCONO = (Integer)program.getLDAZD().CONO;
-		} else if (!iCONO.isInteger()) {
+		} else if (!validateCompany()) {
 			mi.error("Company number " + iCONO + " is invalid");
 			return false;
 		}
 		
 		if(!(iORDT == null || iORDT == "")){
-      if (!validateDate(iORDT)) {
+      if (!validateDate("YYYYMMdd", iORDT)) {
         mi.error("Invalid order date.");
         return false;
       }
     }
     
     if(!(iRLDT == null || iRLDT == "")){
-      if (!validateDate(iRLDT)) {
+      if (!validateDate("YYYYMMdd", iRLDT)) {
         mi.error("Invalid customer's purchase order date.");
         return false;
       }
     }
     
     if(!(iFDDT == null || iFDDT == "")){
-      if (!validateDate(iFDDT)) {
+      if (!validateDate("YYYYMMdd", iFDDT)) {
         mi.error("Invalid earliest delivery date.");
         return false;
       }
     }
     
     if(!(iUID1 == null || iUID1 == "")){
-      if (!validateDate(iUID1)) {
+      if (!validateDate("YYYYMMdd", iUID1)) {
         mi.error("Invalid user defined date 1.");
         return false;
       }
     }
     
     if(!(iUID2 == null || iUID2 == "")){
-      if (!validateDate(iUID2)) {
+      if (!validateDate("YYYYMMdd", iUID2)) {
         mi.error("Invalid user defined date 2.");
         return false;
       }
     }
     
     if(!(iUID3 == null || iUID3 == "")){
-      if (!validateDate(iUID3)) {
+      if (!validateDate("YYYYMMdd", iUID3)) {
         mi.error("Invalid user defined date 3.");
         return false;
       }
@@ -730,7 +735,7 @@ public class Update extends ExtendM3Transaction {
      * Calling method validDeliveryMethod to read and to validate the delivery method input
      */
    
-    if (iMODL != "") {
+    if (!(iMODL == null || iMODL == "")) {
       if (!validDeliveryMethod()){
         mi.error("Invalid delivery method: " + iMODL);
   		  return false;
@@ -740,8 +745,7 @@ public class Update extends ExtendM3Transaction {
 	  /**
      * Calling method validDeliveryMethod to read and to validate the delivery method input
      */
-   
-    if (iTEDL != "") {
+    if (!(iTEDL == null || iTEDL == "")) {
       if (!validDeliveryTerms()) {
         mi.error("Invalid delivery terms: " + iTEDL);
   		  return false;
@@ -751,73 +755,83 @@ public class Update extends ExtendM3Transaction {
     /**
      * Calling method validWarehouse to validate the warehouse input data
      */
-   
-    if (!validOrder()) {
-      mi.error("Order data " + iORNO + " is invalid");
-		  return false;
+    if (!(iORNO == null || iORNO == "")) {
+      if (!validOrder()) {
+        mi.error("Order data " + iORNO + " is invalid");
+  		  return false;
+      }
     }
     
     /**
      * Calling method validWarehouse to validate the warehouse input data
      */
-   
-    if (!validWarehouse()) {
-      mi.error("Warehouse data " + iWHLO + " is invalid");
-		  return false;
+    if (!(iWHLO == null || iWHLO == "")) {
+      if (iWHLO != "") {
+        if (!validWarehouse()) {
+          mi.error("Warehouse data " + iWHLO + " is invalid");
+    		  return false;
+        }
+      }
     }
     
     /**
      * Calling method validFacility to validate the facility input data
      */
-   
-    if (!validFacility()) {
-      mi.error("Facility data " + iFACI + " is invalid");
-		  return false;
+    if (!(iFACI == null || iFACI == "")) {
+      if (!validFacility()) {
+        mi.error("Facility data " + iFACI + " is invalid");
+  		  return false;
+      }
     }
     
     /**
      * Calling method validFacility to validate the facility input data
      */
-   
-    if (!validPaymentTerm()) {
-      mi.error("Payment term data " + iTEPY + " is invalid");
-		  return false;
+    if (!(iTEPY == null || iTEPY == "")) {
+      if (!validPaymentTerm()) {
+        mi.error("Payment term data " + iTEPY + " is invalid");
+  		  return false;
+      }
     }
     
     /**
      * Calling method validFacility to validate the facility input data
      */
-   
-    if (!validPaymentMethod()) {
-      mi.error("Payment method data " + iPYCD + " is invalid");
-		  return false;
+    if (!(iPYCD == null || iPYCD == "")) {
+      if (!validPaymentMethod()) {
+        mi.error("Payment method data " + iPYCD + " is invalid");
+  		  return false;
+      }
     }
     
     /**
      * Calling method validFacility to validate the facility input data
      */
-   
-    if (!validCashDiscountTerm()) {
-      mi.error("Cash discount term data " + iTECD + " is invalid");
-		  return false;
+    if (!(iTECD == null || iTECD == "")) {
+      if (!validCashDiscountTerm()) {
+        mi.error("Cash discount term data " + iTECD + " is invalid");
+  		  return false;
+      }
     }
     
     /**
      * Calling method validFacility to validate the facility input data
      */
-   
-    if (!validPackageTerms()) {
-      mi.error("Package terms data " + iTEPA + " is invalid");
-		  return false;
+    if (!(iTEPA == null || iTEPA == "")) {
+      if (!validPackageTerms()) {
+        mi.error("Package terms data " + iTEPA + " is invalid");
+  		  return false;
+      }
     }
     
     /**
      * Calling method validFacility to validate the facility input data
      */
-   
-    if (!validSalesPerson()) {
-      mi.error("Sales person data " + iSMCD + " is invalid");
-		  return false;
+    if (!(iSMCD == null || iSMCD == "")) {
+      if (!validSalesPerson()) {
+        mi.error("Sales person data " + iSMCD + " is invalid");
+  		  return false;
+      }
     }
 
 		return true;
@@ -833,7 +847,7 @@ public class Update extends ExtendM3Transaction {
 	  DBAction query = database.table("OOHEAD").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("OACONO", currentCompany);
+    container.setInt("OACONO", iCONO.toInteger());
     container.set("OAORNO", iORNO);
     
     if (query.read(container)) {
@@ -858,7 +872,7 @@ public class Update extends ExtendM3Transaction {
 	  DBAction query = database.table("OOHEAD").index("00").build();
     DBContainer container = query.getContainer();
 
-    container.setInt("OACONO", currentCompany);
+    container.setInt("OACONO", iCONO.toInteger());
     container.set("OAORNO", iORNO);
     
     // Update changed information

@@ -7,18 +7,9 @@
  * 20231108 Hatem Abdellatif - Reset OODOCU Data
  */
  
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.text.ParseException;
-import java.time.format.DateTimeParseException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.*;
-import java.time.format.*;
+import java.time.format.DateTimeFormatter;
+
 
 public class Reset extends ExtendM3Transaction {
   private final MIAPI mi;
@@ -32,13 +23,13 @@ public class Reset extends ExtendM3Transaction {
 	
 	
 	public Reset(MIAPI mi, DatabaseAPI database, ProgramAPI program, UtilityAPI utility, MICallerAPI miCaller, ExtensionAPI extension, LoggerAPI logger) {
-	this.mi = mi;
-	this.database = database;
-	this.program = program;
-	this.utility = utility;
-	this.miCaller = miCaller;
-	this.extension = extension;
-	this.logger = logger;
+    this.mi = mi;
+    this.database = database;
+    this.program = program;
+    this.utility = utility;
+    this.miCaller = miCaller;
+    this.extension = extension;
+    this.logger = logger;
   }
   
   
@@ -83,14 +74,14 @@ public class Reset extends ExtendM3Transaction {
 	
   
   public void main() {
-	
-	iCONO = mi.inData.get("CONO") == null ? "" : mi.inData.get("CONO").trim();
-	   iDIVI = mi.inData.get("DIVI") == null ? "" : mi.inData.get("DIVI").trim();
-	   iORNO = mi.inData.get("ORNO") == null ? "" : mi.inData.get("ORNO").trim();
-	   iDOVA = mi.inData.get("DOVA") == null ? "" : mi.inData.get("DOVA").trim();
-	iDONR = mi.inData.get("DONR") == null ? "" : mi.inData.get("DONR").trim();
-	   
-	if (!validate()) {
+    
+    iCONO = mi.inData.get("CONO") == null ? "" : mi.inData.get("CONO").trim();
+   	iDIVI = mi.inData.get("DIVI") == null ? "" : mi.inData.get("DIVI").trim();
+   	iORNO = mi.inData.get("ORNO") == null ? "" : mi.inData.get("ORNO").trim();
+   	iDOVA = mi.inData.get("DOVA") == null ? "" : mi.inData.get("DOVA").trim();
+    iDONR = mi.inData.get("DONR") == null ? "" : mi.inData.get("DONR").trim();
+   	
+    if (!validate()) {
 		  return;
 		}
 		
@@ -99,15 +90,17 @@ public class Reset extends ExtendM3Transaction {
 		if (fetchRecord()) {
 		  //If no error then add the record in EXTD90 database table
 		  if (addRecord()) {
-			//If no error then update the record
-			changeRecord();
+		    //If no error then update the record
+		    changeRecord();
 		  } else {
-			mi.error("Data did not saved in EXTD90 database table!");
+		    mi.error("Data did not saved in (EXTD90) database table!");
+		    return;
 		  }
 		} else {
 		  mi.error("Can not select the desired record.");
+		  return;
 		}
-	
+    
   }
   
   /**
@@ -117,42 +110,42 @@ public class Reset extends ExtendM3Transaction {
 	 * @return boolean
 	 */
   private boolean fetchRecord() {
-	DBAction query = database.table("OODOCU")
-							 .index("00")
-							 .selection("OFCONO", "OFDIVI", "OFORNO", "OFDONR", "OFDOVA", "OFDOTP",
-										"OFNOEX", "OFDOCD", "OFDODT", "OFTXID", "OFRGDT", "OFRGTM",
-										"OFLMDT", "OFCHNO", "OFCHID", "OFEMAL", "OFDEV")
-							 .build();
-									  
-	DBContainer container = query.getContainer();
-	container.setInt("OFCONO", iCONO.toInteger());
-	container.set("OFORNO", iORNO);
-	container.set("OFDOVA", iDOVA);
-	container.set("OFDONR", iDONR);
-	  
-	if (query.read(container)) {
-	  company = container.get("OFCONO");
-	  division = container.get("OFDIVI");
-	  customerOrder = container.get("OFORNO");
-	  documentNumber = container.get("OFDONR");
-	  documentVariant = container.get("OFDOVA");
-	  externalInternalDocument = container.get("OFDOTP");
-	  copiesNumber = container.get("OFNOEX");
-	  printDocument = container.get("OFDOCD");
-	  lastPrintoutDate = container.get("OFDODT");
-	  testIdentity = container.get("OFTXID");
-	  entryDate = container.get("OFRGDT");
-	  entryTime = container.get("OFRGTM");
-	  changeDate = container.get("OFLMDT");
-	  changeNumber = container.get("OFCHNO");
-	  changedBy = container.get("OFCHID");
-	  electronicMailAddress = container.get("OFEMAL");
-	  printer = container.get("OFDEV");
-	  return true;
-	} else {
-	  mi.error("Record does not exist in EXTD90 database table!");
-	  return false;
-	}
+    DBAction query = database.table("OODOCU")
+                             .index("00")
+                             .selection("OFCONO", "OFDIVI", "OFORNO", "OFDONR", "OFDOVA", "OFDOTP", 
+                                        "OFNOEX", "OFDOCD", "OFDODT", "OFTXID", "OFRGDT", "OFRGTM", 
+                                        "OFLMDT", "OFCHNO", "OFCHID", "OFEMAL", "OFDEV")
+                             .build();
+                                      
+    DBContainer container = query.getContainer();
+    container.setInt("OFCONO", iCONO.toInteger());
+    container.set("OFORNO", iORNO);
+    container.set("OFDOVA", iDOVA);
+    container.set("OFDONR", iDONR);
+      
+    if (query.read(container)) {
+      company = container.get("OFCONO");
+      division = container.get("OFDIVI");
+      customerOrder = container.get("OFORNO");
+      documentNumber = container.get("OFDONR");
+      documentVariant = container.get("OFDOVA");
+      externalInternalDocument = container.get("OFDOTP");
+      copiesNumber = container.get("OFNOEX");
+      printDocument = container.get("OFDOCD");
+      lastPrintoutDate = container.get("OFDODT");
+      testIdentity = container.get("OFTXID");
+      entryDate = container.get("OFRGDT");
+      entryTime = container.get("OFRGTM");
+      changeDate = container.get("OFLMDT");
+      changeNumber = container.get("OFCHNO");
+      changedBy = container.get("OFCHID");
+      electronicMailAddress = container.get("OFEMAL");
+      printer = container.get("OFDEV");
+      return true;
+    } else {
+      mi.error("Record does not exist in (OODOCU) database table!");
+      return false;
+    }
   }
   
   /**
@@ -162,38 +155,36 @@ public class Reset extends ExtendM3Transaction {
 	 * @return boolean
 	 */
   private boolean addRecord() {
-	DBAction query = database.table("EXTD90")
-							 .index("00")
-							 .build();
-	  
-	DBContainer container = query.getContainer();
-	container.setInt("EXCOMP", company.toInteger());
-	container.set("EXCURN", customerOrder);
-	container.set("EXDUNO", documentNumber);
-	container.set("EXDUVA", documentVariant);
-	
-	container.set("EXDIVS", division);
-	container.setInt("EXNOCO", copiesNumber.toInteger());
-	container.setInt("EXLPDT", lastPrintoutDate.toInteger());
-	container.set("EXIEDU", externalInternalDocument);
-	container.setInt("EXPRDU", printDocument.toInteger());
-	container.setLong("EXTIDE", testIdentity.toLong());
-	container.setInt("EXENDT", entryDate.toInteger());
-	container.setInt("EXENTM", entryTime.toInteger());
-	container.setInt("EXCHDT", changeDate.toInteger());
-	container.setInt("EXCHNU", changeNumber.toInteger());
-	container.set("EXCHBY", changedBy);
-	container.set("EXMAIL", electronicMailAddress);
-	container.set("EXPRNT", printer);
-	container.setInt("EXTMSU", timeNow.toInteger());
+    DBAction query = database.table("EXTD90")
+                             .index("00")
+                             .build();
+      
+    DBContainer container = query.getContainer();
+    container.setInt("EXCOMP", company.toInteger());
+    container.set("EXCURN", customerOrder);
+    container.set("EXDUNO", documentNumber);
+    container.set("EXDUVA", documentVariant);
+    
+    container.set("EXDIVS", division);
+    container.setInt("EXNOCO", copiesNumber.toInteger());
+    container.setInt("EXLMDT", lastPrintoutDate.toInteger());
+    container.set("EXIEDU", externalInternalDocument);
+    container.setInt("EXPRDU", printDocument.toInteger());
+    container.setLong("EXTIDE", testIdentity.toLong());
+    container.setInt("EXRGDT", entryDate.toInteger());
+    container.setInt("EXRGTM", entryTime.toInteger());
+    container.setInt("EXCHDT", changeDate.toInteger());
+    container.setInt("EXCHNO", changeNumber.toInteger());
+    container.set("EXCHID", changedBy);
+    container.set("EXMAIL", electronicMailAddress);
+    container.set("EXPRNT", printer);
+    container.setInt("EXTMSU", timeNow.toInteger());
 
-	Closure<?> insertCallBack = {}
-
-	if (query.insert(container)) {
-	  return true;
-	} else {
-	  return false;
-	}
+    if (query.insert(container)) {
+      return true;
+    } else {
+      return false;
+    }
   }
   
   
@@ -204,35 +195,34 @@ public class Reset extends ExtendM3Transaction {
    * @return void
    */
   private void changeRecord() {
-	
-	DBAction query = database.table("OODOCU")
-							 .index("00")
-							 .build();
-							 
-	DBContainer container = query.getContainer();
-	container.setInt("OFCONO", iCONO.toInteger());
-	container.set("OFDIVI", iDIVI);
-	container.set("OFORNO", iORNO);
-	container.set("OFDOVA", iDOVA);
-	container.set("OFDONR", iDONR);
-	
-	// Reset changed information
-	if(!query.readLock(container, updateCallBack)){
-	  mi.error("Record does not exist");
-	  return;
-	}
+    
+    DBAction query = database.table("OODOCU")
+                             .index("00")
+                             .build();
+                             
+    DBContainer container = query.getContainer();
+    container.setInt("OFCONO", iCONO.toInteger());
+    container.set("OFDIVI", iDIVI);
+    container.set("OFORNO", iORNO);
+    container.set("OFDOVA", iDOVA);
+    container.set("OFDONR", iDONR);
+    
+    // Reset changed information
+    if(!query.readLock(container, updateCallBack)){
+      mi.error("Record does not exist");
+      return;
+    }
 
   }
   
   Closure<?> updateCallBack = { LockedResult lockedResult ->
   
-	lockedResult.setInt("OFDODT", 0);
-	lockedResult.setInt("OFNOEX", 2);
-	
-	lockedResult.setInt("OFLMDT", LocalDate.now().format(DateTimeFormatter.ofPattern("YYYYMMdd")).toInteger());
+    lockedResult.setInt("OFDODT", 0);
+    lockedResult.setInt("OFNOEX", 2);
+    lockedResult.setInt("OFLMDT", LocalDate.now().format(DateTimeFormatter.ofPattern("YYYYMMdd")).toInteger());
 		lockedResult.setInt("OFCHNO", lockedResult.getInt("OFCHNO")+1);
 		lockedResult.set("OFCHID", program.getUser());
-	lockedResult.update();
+    lockedResult.update();
   }
   
   /**
@@ -242,18 +232,18 @@ public class Reset extends ExtendM3Transaction {
 	  * @return boolean
 	  */
   def boolean validateCompany(){
-	boolean validRecord = false;
-	def parameters = ["CONO" : iCONO];
-	Closure<?> handler = { Map<String, String> response ->
-	  if (response.containsKey('errorMsid')){
-		validRecord = false;
-	  } else {
-		validRecord = true;
-	  }
-	};
-	
-	miCaller.call("MNS095MI", "Get", parameters, handler);
-	return validRecord;
+    boolean validRecord = false;
+    def parameters = ["CONO" : iCONO];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("MNS095MI", "Get", parameters, handler);
+    return validRecord;
   }
   
   /**
@@ -263,18 +253,18 @@ public class Reset extends ExtendM3Transaction {
 	  * @return boolean
 	  */
   def boolean validateDivision(){
-	boolean validRecord = false;
-	def parameters = ["CONO" : iCONO, "DIVI" : iDIVI];
-	Closure<?> handler = { Map<String, String> response ->
-	  if (response.containsKey('errorMsid')){
-		validRecord = false;
-	  } else {
-		validRecord = true;
-	  }
-	};
-	
-	miCaller.call("MNS100MI", "GetBasicData", parameters, handler);
-	return validRecord;
+    boolean validRecord = false;
+    def parameters = ["CONO" : iCONO, "DIVI" : iDIVI];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("MNS100MI", "GetBasicData", parameters, handler);
+    return validRecord;
   }
   
   
