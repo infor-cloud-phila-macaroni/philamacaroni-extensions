@@ -1,19 +1,11 @@
 /**
-*  EXT-006MI - Update records in MHDISH table
-*/
-/****************************************************************************************
-Extension Name: Update
-Type : ExtendM3Transaction
-Script Authors: Mohamed Adel - Hatem Abdellatif
-Date: 2023-08-28
- 
-Description:
-      Update records in MHDISH table in MWS410
-         
-Revision History:
-Name                               Date                    Version         Description of Changes
-Hatem Abdellatif - Mohamed Adel    2023-09-02              1.0             Initial Version
-******************************************************************************************/
+ * README
+ * Name: EXT006MI.Update
+ * Standard Table MHDISH Update
+ * Description: Update MHDISH Data
+ * Date	    Changed By      	               Description
+ * 20230828 Hatem Abdellatif - Mohamed Adel  Update MHDISH Data
+ */
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
@@ -22,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.text.ParseException;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 
 
 public class Update extends ExtendM3Transaction {
@@ -33,38 +26,42 @@ public class Update extends ExtendM3Transaction {
 	private final MICallerAPI miCaller;
   
   /*** Input Fields of EXTUBH Table */
-  private String inCONO;
-  private String inINOU;
-  private String inDLIX;
-  private String inDPOL;
-  private String inDSDT;
-  private String inDSHM;
-  private String inSROT;
-  private String inSROD;
-  private String inROUT;
-  private String inRODN;
-  private String inMODL;
-  private String inMODF;
-  private String inTEDL;
-  private String inTEDF;
-  private String inDTDT;
-  private String inDTHM;
-  private String inHAFE;
-  private String inLODO;
-  private String inETRN;
-  private String inFWNS;
-  private String inFWNO;
-  private String inIRST;
-  private String inTSID;
-  private String inRASN;
-  private String inDFDT;
-  private String inDFHM;
-  private String inPWDT;
-  private String inPWHM;
-  private String inAWDT;
-  private String inAWHM;
-  private String inRSCD;
-  int changeNumber = 0;
+  private String iCONO;
+  private String iINOU;
+  private String iDLIX;
+  private String iDPOL;
+  private String iDSDT;
+  private String iDSHM;
+  private String iSROT;
+  private String iSROD;
+  private String iROUT;
+  private String iRODN;
+  private String iMODL;
+  private String iMODF;
+  private String iTEDL;
+  private String iTEDF;
+  private String iDTDT;
+  private String iDTHM;
+  private String iHAFE;
+  private String iLODO;
+  private String iETRN;
+  private String iFWNS;
+  private String iFWNO;
+  private String iIRST;
+  private String iTSID;
+  private String iRASN;
+  private String iDFDT;
+  private String iDFHM;
+  private String iPWDT;
+  private String iPWHM;
+  private String iAWDT;
+  private String iAWHM;
+  private String iRSCD;
+  private String iSDES;
+  int currentCompany = (Integer)program.getLDAZD().CONO;
+	int changeNumber = 0;
+	int sequence = 0;
+	String deliveryStatus;
 
 
   public Update(MIAPI mi, DatabaseAPI database, ProgramAPI program, UtilityAPI utility, MICallerAPI miCaller, LoggerAPI logger) {
@@ -78,58 +75,86 @@ public class Update extends ExtendM3Transaction {
   
   public void main() {
     
-    if(mi.inData.get("CONO") == null || mi.inData.get("CONO").trim() =="") {
-      inCONO = Integer.parseInt(program.LDAZD.CONO.toString())
-    }else {
-      inCONO = mi.inData.get("CONO") as int
-    }
-    
     //Get All input Fields Values:
-    inCONO = mi.inData.get("CONO") == null ? "" : mi.inData.get("CONO").trim();
-    inINOU = mi.inData.get("INOU") == null ? "" : mi.inData.get("INOU").trim();
-    inDLIX = mi.inData.get("DLIX") == null ? "" : mi.inData.get("DLIX").trim();
-    inDPOL = mi.inData.get("DPOL") == null ? "" : mi.inData.get("DPOL").trim();
-    inDSDT = mi.inData.get("DSDT") == null ? "" : mi.inData.get("DSDT").trim();
-    inDSHM = mi.inData.get("DSHM") == null ? "" : mi.inData.get("DSHM").trim();
-    inSROT = mi.inData.get("SROT") == null ? "" : mi.inData.get("SROT").trim();
-    inSROD = mi.inData.get("SROD") == null ? "" : mi.inData.get("SROD").trim();
-    inROUT = mi.inData.get("ROUT") == null ? "" : mi.inData.get("ROUT").trim();
-    inRODN = mi.inData.get("RODN") == null ? "" : mi.inData.get("RODN").trim();
-    inMODL = mi.inData.get("MODL") == null ? "" : mi.inData.get("MODL").trim();
-    inMODF = mi.inData.get("MODF") == null ? "" : mi.inData.get("MODF").trim();
-    inTEDL = mi.inData.get("TEDL") == null ? "" : mi.inData.get("TEDL").trim();
-    inTEDF = mi.inData.get("TEDF") == null ? "" : mi.inData.get("TEDF").trim();
-    inDTDT = mi.inData.get("DTDT") == null ? "" : mi.inData.get("DTDT").trim();
-    inDTHM = mi.inData.get("DTHM") == null ? "" : mi.inData.get("DTHM").trim();
-    inHAFE = mi.inData.get("HAFE") == null ? "" : mi.inData.get("HAFE").trim();
-    inLODO = mi.inData.get("LODO") == null ? "" : mi.inData.get("LODO").trim();
-    inETRN = mi.inData.get("ETRN") == null ? "" : mi.inData.get("ETRN").trim();
-    inFWNS = mi.inData.get("FWNS") == null ? "" : mi.inData.get("FWNS").trim();
-    inFWNO = mi.inData.get("FWNO") == null ? "" : mi.inData.get("FWNO").trim();
-    inIRST = mi.inData.get("IRST") == null ? "" : mi.inData.get("IRST").trim();
-    inTSID = mi.inData.get("TSID") == null ? "" : mi.inData.get("TSID").trim();
-    inRASN = mi.inData.get("RASN") == null ? "" : mi.inData.get("RASN").trim();
-    inDFDT = mi.inData.get("DFDT") == null ? "" : mi.inData.get("DFDT").trim();
-    inDFHM = mi.inData.get("DFHM") == null ? "" : mi.inData.get("DFHM").trim();
-    inPWDT = mi.inData.get("PWDT") == null ? "" : mi.inData.get("PWDT").trim();
-    inPWHM = mi.inData.get("PWHM") == null ? "" : mi.inData.get("PWHM").trim();
-    inAWDT = mi.inData.get("AWDT") == null ? "" : mi.inData.get("AWDT").trim();
-    inAWHM = mi.inData.get("AWHM") == null ? "" : mi.inData.get("AWHM").trim();
-    inRSCD = mi.inData.get("RSCD") == null ? "" : mi.inData.get("RSCD").trim();
+    iCONO = mi.inData.get("CONO") == null ? "" : mi.inData.get("CONO").trim();
+    iINOU = mi.inData.get("INOU") == null ? "" : mi.inData.get("INOU").trim();
+    iDLIX = mi.inData.get("DLIX") == null ? "" : mi.inData.get("DLIX").trim();
+    iDPOL = mi.inData.get("DPOL") == null ? "" : mi.inData.get("DPOL").trim();
+    iDSDT = mi.inData.get("DSDT") == null ? "" : mi.inData.get("DSDT").trim();
+    iDSHM = mi.inData.get("DSHM") == null ? "" : mi.inData.get("DSHM").trim();
+    iSROT = mi.inData.get("SROT") == null ? "" : mi.inData.get("SROT").trim();
+    iSROD = mi.inData.get("SROD") == null ? "" : mi.inData.get("SROD").trim();
+    iROUT = mi.inData.get("ROUT") == null ? "" : mi.inData.get("ROUT").trim();
+    iRODN = mi.inData.get("RODN") == null ? "" : mi.inData.get("RODN").trim();
+    iMODL = mi.inData.get("MODL") == null ? "" : mi.inData.get("MODL").trim();
+    iMODF = mi.inData.get("MODF") == null ? "" : mi.inData.get("MODF").trim();
+    iTEDL = mi.inData.get("TEDL") == null ? "" : mi.inData.get("TEDL").trim();
+    iTEDF = mi.inData.get("TEDF") == null ? "" : mi.inData.get("TEDF").trim();
+    iDTDT = mi.inData.get("DTDT") == null ? "" : mi.inData.get("DTDT").trim();
+    iDTHM = mi.inData.get("DTHM") == null ? "" : mi.inData.get("DTHM").trim();
+    iHAFE = mi.inData.get("HAFE") == null ? "" : mi.inData.get("HAFE").trim();
+    iLODO = mi.inData.get("LODO") == null ? "" : mi.inData.get("LODO").trim();
+    iETRN = mi.inData.get("ETRN") == null ? "" : mi.inData.get("ETRN").trim();
+    iFWNS = mi.inData.get("FWNS") == null ? "" : mi.inData.get("FWNS").trim();
+    iFWNO = mi.inData.get("FWNO") == null ? "" : mi.inData.get("FWNO").trim();
+    iIRST = mi.inData.get("IRST") == null ? "" : mi.inData.get("IRST").trim();
+    iTSID = mi.inData.get("TSID") == null ? "" : mi.inData.get("TSID").trim();
+    iRASN = mi.inData.get("RASN") == null ? "" : mi.inData.get("RASN").trim();
+    iDFDT = mi.inData.get("DFDT") == null ? "" : mi.inData.get("DFDT").trim();
+    iDFHM = mi.inData.get("DFHM") == null ? "" : mi.inData.get("DFHM").trim();
+    iPWDT = mi.inData.get("PWDT") == null ? "" : mi.inData.get("PWDT").trim();
+    iPWHM = mi.inData.get("PWHM") == null ? "" : mi.inData.get("PWHM").trim();
+    iAWDT = mi.inData.get("AWDT") == null ? "" : mi.inData.get("AWDT").trim();
+    iAWHM = mi.inData.get("AWHM") == null ? "" : mi.inData.get("AWHM").trim();
+    iRSCD = mi.inData.get("RSCD") == null ? "" : mi.inData.get("RSCD").trim();
     
     if (!validate()) {
 			 return;
 		}
+		
+		readStatus();
+    if (deliveryStatus < "50") {
+      updateRecord();
+    } else {
+      mi.error("Not allowed to update as this record as the delivery status is equal or more than (50).");
+      return;
+    }
+		
+  }
+  
+  /**
+	 * readStatus - Read of the current record status
+	 *
+	 * @param  null
+	 * @return boolean
+	 */
+  private boolean readStatus() {
+    DBAction query = database.table("MHDISH").index("00").selection("OQCONO", "OQINOU", "OQDLIX", "OQPGRS").build();
+    DBContainer container = query.getContainer();
+    container.setInt("OQCONO", iCONO.toInteger());
+    container.setInt("OQINOU", iINOU.toInteger());
+    container.setLong("OQDLIX", iDLIX.toLong());
+    if (query.read(container)) {
+      deliveryStatus = container.get("OQPGRS");
+    }
+  }
+  
+  /**
+   * updates record in the MHDISH table
+   *
+   */
+  private void updateRecord() {
+    logger.debug("Before database read");
     
 
     DBAction dbaMHDISH = database.table("MHDISH")
-          .index("00")
-          .build();
+                                 .index("00")
+                                 .build();
           
     DBContainer conMHDISH = dbaMHDISH.getContainer();
-    conMHDISH.setInt("OQCONO", inCONO.toInteger());
-    conMHDISH.setInt("OQINOU", inINOU.toInteger());
-    conMHDISH.setLong("OQDLIX", inDLIX.toLong());
+    conMHDISH.setInt("OQCONO", iCONO.toInteger());
+    conMHDISH.setInt("OQINOU", iINOU.toInteger());
+    conMHDISH.setLong("OQDLIX", iDLIX.toLong());
     
     
     // Update changed information
@@ -142,144 +167,326 @@ public class Update extends ExtendM3Transaction {
   
   Closure<?> updateCallBack = { LockedResult lockedResult ->
   
-    if(!(inDPOL == null || inDPOL == "")){
-      lockedResult.set("OQDPOL", inDPOL);
+    if (iDPOL != "" && iDPOL != "?") {
+      lockedResult.set("OQDPOL", iDPOL);
     }
     
-    if(!(inDSDT == null || inDSDT == "")){
-      lockedResult.setInt("OQDSDT", inDSDT.toInteger());
+    if (iDSDT != "" && iDSDT != "?") {
+      lockedResult.setInt("OQDSDT", iDSDT.toInteger());
     }
     
-    if(!(inDSHM == null || inDSHM == "")){
-      lockedResult.setInt("OQDSHM", inDSHM.toInteger());
+    if (iDSHM != "" && iDSHM != "?") {
+      lockedResult.setInt("OQDSHM", iDSHM.toInteger());
     } else {
       lockedResult.setInt("OQDSHM", 0);
     }
-    
-    if(!(inSROT == null || inSROT == "")){
-      lockedResult.set("OQSROT", inSROT);
+
+    if (iSROT != "" && iSROT != "?") {
+      lockedResult.set("OQSROT", iSROT);
     }
     
-    if(!(inSROD == null || inSROD == "")){
-      lockedResult.setInt("OQSROD", inSROD.toInteger());
+    if (iSROD != "" && iSROD != "?") {
+      lockedResult.setInt("OQSROD", iSROD.toInteger());
     }
     
-    if(!(inROUT == null || inROUT == "")){
-      lockedResult.set("OQROUT", inROUT);
+    if (iROUT != "" && iROUT != "?") {
+      lockedResult.set("OQROUT", iROUT);
+      lockedResult.set("OQSDES", iSDES);
     }
     
-    if(!(inRODN == null || inRODN == "")){
-      lockedResult.setInt("OQRODN", inRODN.toInteger());
+    if (iRODN != "" && iRODN != "?") {
+      lockedResult.setInt("OQRODN", iRODN.toInteger());
     }
     
-    if(!(inMODL == null || inMODL == "")){
-      lockedResult.set("OQMODL", inMODL);
+    if (iMODL != "" && iMODL != "?") {
+      lockedResult.set("OQMODL", iMODL);
     }
     
-    if(!(inMODF == null || inMODF == "")){
-      lockedResult.set("OQMODF", inMODF);
+    if (iMODF != "" && iMODF != "?") {
+      lockedResult.set("OQMODF", iMODF);
     }
     
-    if(!(inTEDL == null || inTEDL == "")){
-      lockedResult.set("OQTEDL", inTEDL);
+    if (iTEDL != "" && iTEDL != "?") {
+      lockedResult.set("OQTEDL", iTEDL);
     }
     
-    if(!(inTEDF == null || inTEDF == "")){
-      lockedResult.set("OQTEDF", inTEDF);
+    if (iTEDF != "" && iTEDF != "?") {
+      lockedResult.set("OQTEDF", iTEDF);
     }
     
-    if(!(inDTDT == null || inDTDT == "")){
-      lockedResult.setInt("OQDTDT", inDTDT.toInteger());
+    if (iDTDT != "" && iDTDT != "?") {
+      lockedResult.setInt("OQDTDT", iDTDT.toInteger());
+    }
+
+    if (iDTHM != "" && iDTHM != "?") {
+      lockedResult.setInt("OQDTHM", iDTHM.toInteger());
+    } else {
+      lockedResult.setInt("OQDTHM", 0);
+    }
+
+    if (iHAFE != "" && iHAFE != "?") {
+      lockedResult.set("OQHAFE", iHAFE);
     }
     
-    if(!(inDTHM == null || inDTHM == "")){
-      lockedResult.setInt("OQDTHM", inDTHM.toInteger());
+    if (iLODO != "" && iLODO != "?") {
+      lockedResult.set("OQLODO", iLODO);
     }
     
-    if(!(inHAFE == null || inHAFE == "")){
-      lockedResult.set("OQHAFE", inHAFE);
+    if (iETRN != "" && iETRN != "?") {
+      lockedResult.set("OQETRN", iETRN);
     }
     
-    if(!(inLODO == null || inLODO == "")){
-      lockedResult.set("OQLODO", inLODO);
+    if (iFWNS != "" && iFWNS != "?") {
+      lockedResult.set("OQFWNS", iFWNS);
     }
     
-    if(!(inETRN == null || inETRN == "")){
-      lockedResult.set("OQETRN", inETRN);
+    if (iFWNO != "" && iFWNO != "?") {
+      lockedResult.set("OQFWNO", iFWNO);
     }
     
-    if(!(inFWNS == null || inFWNS == "")){
-      lockedResult.set("OQFWNS", inFWNS);
+    if (iIRST != "" && iIRST != "?") {
+      lockedResult.set("OQIRST", iIRST);
     }
     
-    if(!(inFWNO == null || inFWNO == "")){
-      lockedResult.set("OQFWNO", inFWNO);
+    if (iTSID != "" && iTSID != "?") {
+      lockedResult.set("OQTSID", iTSID);
     }
     
-    if(!(inIRST == null || inIRST == "")){
-      lockedResult.set("OQIRST", inIRST);
+    if (iRASN != "" && iRASN != "?") {
+      lockedResult.set("OQRASN", iRASN);
     }
     
-    if(!(inTSID == null || inTSID == "")){
-      lockedResult.set("OQTSID", inTSID);
+    if (iDFDT != "" && iDFDT != "?") {
+      lockedResult.setInt("OQDFDT", iDFDT.toInteger());
+    }
+
+    if (iDFHM != "" && iDFHM != "?") {
+      lockedResult.setInt("OQDFHM", iDFHM.toInteger());
+    } else {
+      lockedResult.setInt("OQDFHM", 0);
     }
     
-    if(!(inRASN == null || inRASN == "")){
-      lockedResult.set("OQRASN", inRASN);
+    if (iPWDT != "" && iPWDT != "?") {
+      lockedResult.setInt("OQPWDT", iPWDT.toInteger());
     }
     
-    if(!(inDFDT == null || inDFDT == "")){
-      lockedResult.setInt("OQDFDT", inDFDT.toInteger());
+    if (iPWHM != "" && iPWHM != "?") {
+      lockedResult.setInt("OQPWHM", iPWHM.toInteger());
+    } else {
+      lockedResult.setInt("OQPWHM", 0);
     }
-    
-    if(!(inDFHM == null || inDFHM == "")){
-      lockedResult.setInt("OQDFHM", inDFHM.toInteger());
+
+    if (iAWDT != "" && iAWDT != "?") {
+      lockedResult.setInt("OQAWDT", iAWDT.toInteger());
     }
-    
-    if(!(inPWDT == null || inPWDT == "")){
-      lockedResult.setInt("OQPWDT", inPWDT.toInteger());
+
+    if (iAWHM != "" && iAWHM != "?") {
+      lockedResult.setInt("OQAWHM", iAWHM.toInteger());
+    } else {
+      lockedResult.setInt("OQAWHM", 0);
     }
-    
-    if(!(inPWHM == null || inPWHM == "")){
-      lockedResult.setInt("OQPWHM", inPWHM.toInteger());
-    }
-    
-    if(!(inAWDT == null || inAWDT == "")){
-      lockedResult.setInt("OQAWDT", inAWDT.toInteger());
-    }
-    
-    if(!(inAWHM == null || inAWHM == "")){
-      lockedResult.setInt("OQAWHM", inAWHM.toInteger());
-    }
-    
-    if(!(inRSCD == null || inRSCD == "")){
-      lockedResult.set("OQRSCD", inRSCD);
+
+    if (iRSCD != "" && iRSCD != "?") {
+      lockedResult.set("OQRSCD", iRSCD);
     }
     
     lockedResult.set("OQLMDT", LocalDate.now().format(DateTimeFormatter.ofPattern("YYYYMMdd")).toInteger());
 		lockedResult.set("OQCHNO", lockedResult.getInt("OQCHNO")+1);
 		lockedResult.set("OQCHID", program.getUser());
     lockedResult.update();
+    
+    logger.debug("After database read");
   }
   
   /**
-	 * validateDate - Validate input
-	 *
-	 * @param  String - strDate
-	 * @return boolean
-	 */
-  private boolean validateDate(String strDate){
-    String strDateRegEx =  "\\d{4}(0[1-9]|1[012])(0[1-9]|[12][0-9]|[3][01])";
-        
-    if(strDate.matches(strDateRegEx)){
-      SimpleDateFormat sdf = new SimpleDateFormat("YYYYMMdd");
-      try{
-          sdf.parse(strDate);
-          return true;
-      }catch(ParseException e){
-        return false;
+	  * validateCompany - Validate comapny
+	  *
+	  * @param  null
+	  * @return boolean
+	  */
+  def boolean validateCompany(){
+    boolean validRecord = false;
+    def parameters = ["CONO" : iCONO];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
       }
-        
+    };
+    
+    miCaller.call("MNS095MI", "Get", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+	  * validDeliveryTerms - Validate the delivery terms
+	  *
+	  * @param  null
+	  * @return boolean
+	  */
+  def boolean validDeliveryTerms(){
+    boolean validRecord = false;
+    def parameters = ["TEDL" : iTEDL, "LNCD" : "GB"];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("CRS065MI", "GetDelyTerm", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validDeliveryMethod - Validate the delivery method
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validDeliveryMethod(){
+    boolean validRecord = false;
+    def parameters = ["MODL" : iMODL, "LNCD" : "GB"];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("CRS070MI", "GetDelyMethod", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validDeliveryMethod - Validate the delivery method
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validRout(){
+    boolean validRecord = false;
+    def parameters = ["ROUT" : iROUT];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        iSDES = response.SDES;
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("DRS005MI", "GetRoute", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+  	* validRailStation - Validate the rail station
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validRailStation(){
+    boolean validRecord = false;
+    def parameters = ["RASN" : iRASN];
+    Closure<?> handler = { Map<String, String> response ->
+      if (response.containsKey('errorMsid')){
+        validRecord = false;
+      } else {
+        validRecord = true;
+      }
+    };
+    
+    miCaller.call("CRS061MI", "GetRailStation", parameters, handler);
+    return validRecord;
+  }
+  
+  /**
+	  * validateDate - Validate input
+	  *
+	  * @param  String - strDate
+	  * @return boolean
+	  */
+  def boolean validateDate(String formatStr, String dateStr){
+    try {
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr).BASIC_ISO_DATE;
+      LocalDate.parse(dateStr, formatter);
+    } catch (DateTimeParseException e) {
+      logger.debug("Exception: " + e.toString());
+      return false;
+    }
+    return true;
+  }
+  
+  /**
+	  * validateTime - Validate input
+	  *
+	  * @param  String - strDate
+	  * @return boolean
+	  */
+  def boolean validateTime(String timeStr, String formatStr){
+    try {
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(formatStr, Locale.ENGLISH);
+      LocalTime.parse(timeStr, formatter);
+    } catch (DateTimeParseException e) {
+      logger.debug("Exception: " + e.toString());
+      return false;
+    }
+    return true;
+  }
+  
+  /**
+  	* validHarbour - Validate harbour input
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validHarbour(){
+    boolean validRecord = false;
+    
+    DBAction query = database.table("CSYTAB").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("CTCONO", iCONO.toInteger());
+    container.set("CTDIVI", "");
+    container.set("CTSTCO", "HAFE");
+    container.set("CTSTKY", iHAFE);
+    container.set("CTLNCD", "");
+    
+    // Read information
+    if(!query.read(container)){
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
+  /**
+  	* validTransactionReason - Validate the transaction reason input
+  	*
+  	* @param  null
+  	* @return boolean
+  	*/
+  def boolean validTransactionReason(){
+    boolean validRecord = false;
+    
+    DBAction query = database.table("CSYTAB").index("00").build();
+    DBContainer container = query.getContainer();
+
+    container.setInt("CTCONO", iCONO.toInteger());
+    container.set("CTDIVI", "");
+    container.set("CTSTCO", "RSCD");
+    container.set("CTSTKY", iRSCD);
+    container.set("CTLNCD", "");
+    
+    // Read information
+    if(!query.read(container)){
+      return false;
+    } else {
+      return true;
     }
   }
   
@@ -291,30 +498,140 @@ public class Update extends ExtendM3Transaction {
 	 */
 	boolean validate() {
 
-		if (inCONO == "") {
-			inCONO = (Integer)program.getLDAZD().CONO;
-		} else if (!inCONO.isInteger()) {
-			mi.error("Company number " + inCONO + " is invalid");
+		if (iCONO == "") {
+			iCONO = (Integer)program.getLDAZD().CONO;
+		} else if (!validateCompany()) {
+			mi.error("Company number " + iCONO + " is invalid");
 			return false;
 		}
 		
-		if(!(inDSDT == null || inDSDT == "")){
-      if (!validateDate(inDSDT)) {
-        mi.error("Invalid departure date.");
+		/**
+     * Calling method validDeliveryMethod to read and to validate the delivery method input
+     */
+   
+    if (!(iMODL == null || iMODL == "")) {
+      if (!validDeliveryMethod()){
+        mi.error("Invalid delivery method: " + iMODL);
+  		  return false;
+      }
+    }
+    
+    if (!(iMODF == null || iMODF == "")) {
+      if (!validDeliveryMethod()){
+        mi.error("Invalid final delivery method: " + iMODF);
+  		  return false;
+      }
+    }
+	
+	  /**
+     * Calling method validDeliveryMethod to read and to validate the delivery method input
+     */
+    if (!(iTEDL == null || iTEDL == "")) {
+      if (!validDeliveryTerms()) {
+        mi.error("Invalid delivery terms: " + iTEDL);
+  		  return false;
+      }
+    }
+    
+    if (!(iTEDF == null || iTEDF == "")) {
+      if (!validDeliveryTerms()) {
+        mi.error("Invalid final delivery terms: " + iTEDF);
+  		  return false;
+      }
+    }
+    
+    /**
+     * Calling method validRout to read and to validate the rout input
+     */
+    if (!(iROUT == null || iROUT == "")) {
+      if (!validRout()) {
+        mi.error("Invalid rout: " + iROUT);
+  		  return false;
+      }
+    }
+    
+    /**
+     * Calling method validRout to read and to validate the rout input
+     */
+    if (!(iRASN == null || iRASN == "")) {
+      if (!validRailStation()) {
+        mi.error("Invalid rail station: " + iRASN);
+  		  return false;
+      }
+    }
+    
+    /**
+     * Calling method validHarbour to read and to validate the harbour input
+     */
+    if (!(iHAFE == null || iHAFE == "")) {
+      if (!validHarbour()) {
+        mi.error("Invalid harbour: " + iHAFE);
+  		  return false;
+      }
+    }
+    
+    /**
+     * Calling method validHarbour to read and to validate the harbour input
+     */
+    if (!(iRSCD == null || iRSCD == "")) {
+      if (!validTransactionReason()) {
+        mi.error("Invalid transaction reason: " + iRSCD);
+  		  return false;
+      }
+    }
+		
+		if(!(iDSDT == null || iDSDT == "")){
+      if (!validateDate("YYYYMMdd", iDSDT)) {
+        mi.error("Invalid departure date: " + iDSDT);
         return false;
       }
     }
     
-    if(!(inDTDT == null || inDTDT == "")){
-      if (!validateDate(inDTDT)) {
-        mi.error("Invalid requested departure date.");
+    if(!(iDTDT == null || iDTDT == "")){
+      if (!validateDate("YYYYMMdd", iDTDT)) {
+        mi.error("Invalid requested departure date: " + iDTDT);
         return false;
       }
     }
     
-    if(!(inDFDT == null || inDFDT == "")){
-      if (!validateDate(inDFDT)) {
-        mi.error("Invalid actual departure date.");
+    if(!(iDFDT == null || iDFDT == "")){
+      if (!validateDate("YYYYMMdd", iDFDT)) {
+        mi.error("Invalid actual departure date: " + iDFDT);
+        return false;
+      }
+    }
+    
+    if(!(iPWDT == null || iPWDT == "")){
+      if (!validateDate("YYYYMMdd", iPWDT)) {
+        mi.error("Invalid forwarder planned arrive date: " + iPWDT);
+        return false;
+      }
+    }
+    
+    if(!(iAWDT == null || iAWDT == "")){
+      if (!validateDate("YYYYMMdd", iAWDT)) {
+        mi.error("Invalid forwarder actual arrive date: " + iAWDT);
+        return false;
+      }
+    }
+    
+    if(!(iDSHM == null || iDSHM == "")){
+      if (!validateTime(iDSHM, "HHmm")) {
+        mi.error("Invalid departure time: " + iDSHM);
+        return false;
+      }
+    }
+    
+    if(!(iDTHM == null || iDTHM == "")){
+      if (!validateTime(iDTHM, "HHmm")) {
+        mi.error("Invalid requested departure time: " + iDTHM);
+        return false;
+      }
+    }
+    
+    if(!(iDFHM == null || iDFHM == "")){
+      if (!validateTime(iDTHM, "HHmm")) {
+        mi.error("Invalid actual departure time: " + iDFHM);
         return false;
       }
     }
