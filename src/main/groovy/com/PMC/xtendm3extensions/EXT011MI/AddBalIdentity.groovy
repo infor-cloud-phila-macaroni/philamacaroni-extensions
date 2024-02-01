@@ -7,18 +7,8 @@
  * 20240102 Mohamed Adel - Hatem Abdellatif  Add EXT3PL Data
  */
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
-import java.text.ParseException;
-import java.time.format.DateTimeParseException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.*;
-import java.time.format.*;
+import java.time.format.DateTimeFormatter;
 
 
 public class AddBalIdentity extends ExtendM3Transaction {
@@ -26,8 +16,8 @@ public class AddBalIdentity extends ExtendM3Transaction {
   private final DatabaseAPI database
   private final ProgramAPI program
   private final LoggerAPI logger
-	private final UtilityAPI utility;
-	private final MICallerAPI miCaller;
+  private final UtilityAPI utility;
+  private final MICallerAPI miCaller;
   
   /**
    * Input Fields of EXT3PL Table
@@ -37,7 +27,7 @@ public class AddBalIdentity extends ExtendM3Transaction {
   private String iITNO;
   private String iWHLO;
   private String iWHSL;
-  private	String iZBAN;
+  private String iZBAN;
   private String iZCAM;
   private String iSTQT;
   private String iSTQI;
@@ -75,7 +65,7 @@ public class AddBalIdentity extends ExtendM3Transaction {
     iWHLO = mi.inData.get("WHLO") == null ? "" : mi.inData.get("WHLO").trim();
     iWHSL = mi.inData.get("WHSL") == null ? "" : mi.inData.get("WHSL").trim();
     iZBAN = mi.inData.get("ZBAN") == null ? "" : mi.inData.get("ZBAN").trim();
-    iZCAM = mi.inData.get("CAMU") == null ? "" : mi.inData.get("CAMU").trim();
+    iZCAM = mi.inData.get("ZCAM") == null ? "" : mi.inData.get("ZCAM").trim();
     iSTQT = mi.inData.get("STQT") == null ? "" : mi.inData.get("STQT").trim();
     iSTQI = mi.inData.get("STQI") == null ? "" : mi.inData.get("STQI").trim();
     iSTAT = mi.inData.get("STAT") == null ? "" : mi.inData.get("STAT").trim();
@@ -160,6 +150,7 @@ public class AddBalIdentity extends ExtendM3Transaction {
       container.set("EXRTRZ", iRTRZ);
     }
 
+    container.set("EXRGDT", 0);
     container.set("EXRGDT", currentDate);
     container.set("EXRGTM", currentTime);
     container.set("EXCHID", program.getUser());
