@@ -150,7 +150,7 @@ public class AddBalIdentity extends ExtendM3Transaction {
       container.set("EXRTRZ", iRTRZ);
     }
 
-    container.set("EXRGDT", 0);
+    container.set("EXLMDT", currentDate);
     container.set("EXRGDT", currentDate);
     container.set("EXRGTM", currentTime);
     container.set("EXCHID", program.getUser());
